@@ -19,7 +19,6 @@
 
 package org.apache.james.jdkim;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.james.jdkim.api.BodyHasher;
 import org.apache.james.jdkim.api.Headers;
 import org.apache.james.jdkim.api.SignatureRecord;
@@ -39,6 +38,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
 
 public class DKIMSigner extends DKIMCommon {
@@ -160,7 +160,7 @@ public class DKIMSigner extends DKIMCommon {
      */
     public static PrivateKey getPrivateKey(String privateKeyPKCS8)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] encKey = Base64.decodeBase64(privateKeyPKCS8.getBytes());
+        byte[] encKey = Base64.getMimeDecoder().decode(privateKeyPKCS8.getBytes());
         // byte[] encKey = privateKey.getBytes();
         PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(encKey);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
