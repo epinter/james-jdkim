@@ -22,6 +22,7 @@ package org.apache.james.jdkim;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import org.apache.james.jdkim.api.Result;
 import org.apache.james.jdkim.api.SignatureRecord;
 import org.apache.james.jdkim.exceptions.PermFailException;
 
@@ -210,7 +211,7 @@ public class FileBasedTest extends TestCase {
 
         try {
             DKIMVerifier verifier = new DKIMVerifier(pkr);
-            List<SignatureRecord> res = verifier.verify(is);
+            List<Result> res = verifier.verify(is);
             assertEquals(1, verifier.getResults().size());
             if (getName().startsWith("NONE_"))
                 assertNull(res);

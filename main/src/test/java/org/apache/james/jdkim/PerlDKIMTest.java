@@ -113,7 +113,7 @@ public class PerlDKIMTest extends TestCase {
 
         try {
             DKIMVerifier verifier = new DKIMVerifier(pkr);
-            List<SignatureRecord> res = verifier.verify(is);
+            List<Result> res = verifier.verify(is);
 
             if (getName().matches("good_dk_7|good_dk_6|dk_headers_2|good_dk_3")
                 || getName().matches("|good_dk_gmail|dk_headers_1|good_dk_5|good_dk_4")

@@ -34,6 +34,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.james.jdkim.MockPublicKeyRecordRetriever.Record;
@@ -83,9 +84,9 @@ public class DKIMTest {
         InputStream signatureInputStream = new ByteArrayInputStream((actualSignature + "\r\n").getBytes(StandardCharsets.UTF_8));
 
         SequenceInputStream verifyInputStream = new SequenceInputStream(signatureInputStream, originalInputStream);
-        List<SignatureRecord> verifiedSignatures = verifier.verify(verifyInputStream);
+        verifier.verify(verifyInputStream);
 
-        assertThat(verifiedSignatures)
+        assertThat(verifier.getResults().stream().filter(Result::isSuccess).map(Result::getRecord))
                 .hasSize(1)
                 .allSatisfy(it ->
                         assertThat("DKIM-Signature:" + it.toString()).isEqualTo(expectedSignature)
@@ -123,7 +124,7 @@ public class DKIMTest {
 
         SequenceInputStream verifyInputStream = new SequenceInputStream(signatureInputStream, originalInputStream);
 
-        List<SignatureRecord> verifiedSignatures = verifier.verify(verifyInputStream);
+        verifier.verify(verifyInputStream);
 
         List<Result> results = verifier.getResults();
         assertThat(results)
@@ -133,7 +134,7 @@ public class DKIMTest {
                         assertThat(it.getRecord().getSelector()).isIn("selector2", "selector3")
                 )
         ;
-        assertThat(verifiedSignatures)
+        assertThat(verifier.getResults().stream().filter(Result::isSuccess).map(Result::getRecord).collect(Collectors.toList()))
                 .hasSize(3)
                 .satisfiesOnlyOnce(it ->
                         assertThat("DKIM-Signature:" + it.toString()).isEqualTo(expectedSignature)

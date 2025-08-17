@@ -205,11 +205,11 @@ public class DKIMVerifier {
      * stream
      *
      * @param is inputStream
-     * @return a list of verified signature records.
-     * @throws IOException If error occurs handling data
+     * @return a list with results
+     * @throws IOException   If error occurs handling data
      * @throws FailException if no signature can be verified
      */
-    public List<SignatureRecord> verify(InputStream is) throws IOException,
+    public List<Result> verify(InputStream is) throws IOException,
             FailException {
         Message message;
         try {
@@ -233,7 +233,7 @@ public class DKIMVerifier {
         }
     }
 
-    public BodyHasher newBodyHasher(Headers messageHeaders) throws FailException {
+    public BodyHasher newBodyHasher(Headers messageHeaders) {
         List<String> fields = messageHeaders.getFields("DKIM-Signature");
         if (fields == null || fields.isEmpty()) {
             return null;
@@ -321,12 +321,12 @@ public class DKIMVerifier {
      *
      * @param messageHeaders  parsed headers
      * @param bodyInputStream input stream for the body.
-     * @return a list of verified signature records
-     * @throws IOException If error occurs handling data
+     * @return a list with results
+     * @throws IOException   If error occurs handling data
      * @throws FailException if no signature can be verified
      */
-    public List<SignatureRecord> verify(Headers messageHeaders,
-                                        InputStream bodyInputStream) throws IOException, FailException {
+    public List<Result> verify(Headers messageHeaders,
+                               InputStream bodyInputStream) throws IOException, FailException {
 
         BodyHasher bh = newBodyHasher(messageHeaders);
 
@@ -349,7 +349,7 @@ public class DKIMVerifier {
      * @return a list of valid (verified) signatures or null on null input.
      * @throws FailException if no valid signature is found
      */
-    public List<SignatureRecord> verify(BodyHasher bh) throws FailException {
+    public List<Result> verify(BodyHasher bh) throws FailException {
         if (bh == null) return null;
         CompoundBodyHasher cbh = validateBodyHasher(bh);
 
@@ -379,11 +379,9 @@ public class DKIMVerifier {
      * the user already written the body to the outputstream and closed it.
      *
      * @param compoundBodyHasher the BodyHasher previously obtained by this class.
-     * @return a list of valid (verified) signatures
-     * @throws FailException if no valid signature is found
+     * @return a list with results
      */
-    private List<SignatureRecord> verify(CompoundBodyHasher compoundBodyHasher)
-            throws FailException {
+    private List<Result> verify(CompoundBodyHasher compoundBodyHasher) throws FailException {
         List<SignatureRecord> verifiedSignatures = new LinkedList<>();
         for (BodyHasherImpl bhj : compoundBodyHasher.getBodyHashJobs().values()) {
             byte[] computedHash = bhj.getDigest();
@@ -400,16 +398,15 @@ public class DKIMVerifier {
             }
         }
 
-        for(SignatureRecord s: verifiedSignatures) {
+        for (SignatureRecord s : verifiedSignatures) {
             result.add(new Result(s));
         }
         result.addAll(resultsFromExceptions(compoundBodyHasher.getSignatureExceptions()));
 
-        if (verifiedSignatures.isEmpty()) {
+        if (result.stream().noneMatch(Result::isSuccess)) {
             throw prepareException(compoundBodyHasher.getSignatureExceptions());
-        } else {
-            return verifiedSignatures;
         }
+        return result;
     }
 
     /**
