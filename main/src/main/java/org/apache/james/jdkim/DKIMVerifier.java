@@ -39,6 +39,7 @@ import org.apache.james.jdkim.impl.MultiplexingPublicKeyRecordRetriever;
 import org.apache.james.jdkim.tagvalue.PublicKeyRecordImpl;
 import org.apache.james.jdkim.tagvalue.SignatureRecordImpl;
 import org.apache.james.jdkim.tagvalue.SignatureRecordTemplate;
+import org.xbill.DNS.Lookup;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,17 +60,31 @@ import java.util.List;
 import java.util.Map;
 
 public class DKIMVerifier {
-
-    private final PublicKeyRecordRetriever publicKeyRecordRetriever;
     private final List<Result> result = new ArrayList<>();
+    private final VerifierOptions options;
 
     public DKIMVerifier() {
-        this.publicKeyRecordRetriever = new MultiplexingPublicKeyRecordRetriever(
-                "dns", new DNSPublicKeyRecordRetriever());
+        this(new VerifierOptions()
+                .withPublicKeyRetriever(new MultiplexingPublicKeyRecordRetriever("dns", new DNSPublicKeyRecordRetriever()))
+                .withDnsResolver(Lookup.getDefaultResolver()));
     }
 
     public DKIMVerifier(PublicKeyRecordRetriever publicKeyRecordRetriever) {
-        this.publicKeyRecordRetriever = publicKeyRecordRetriever;
+        this(new VerifierOptions().withPublicKeyRetriever(publicKeyRecordRetriever));
+    }
+
+    public DKIMVerifier(VerifierOptions options) {
+        this.options = options;
+        if(options.getPublicKeyRecordRetriever() == null) {
+            this.options.withPublicKeyRetriever(new MultiplexingPublicKeyRecordRetriever(
+                    "dns", new DNSPublicKeyRecordRetriever()));
+        }
+        if(options.getDnsResolver() == null) {
+            this.options.withDnsResolver(Lookup.getDefaultResolver());
+        }
+        if(options.getClockDriftTolerance().isNegative()) {
+            throw new IllegalArgumentException("toleratedClockDriftInSeconds' must not be negative");
+        }
     }
 
     protected PublicKeyRecord newPublicKeyRecord(String record) {
@@ -87,7 +102,7 @@ public class DKIMVerifier {
 
     protected PublicKeyRecordRetriever getPublicKeyRecordRetriever()
             throws PermFailException {
-        return publicKeyRecordRetriever;
+        return options.getPublicKeyRecordRetriever();
     }
 
     public PublicKeyRecord publicKeySelector(List<String> records)
@@ -262,7 +277,7 @@ public class DKIMVerifier {
                     if (signatureRecord.getSignatureTimestamp() != null) {
                         Instant signedTime = Instant.ofEpochSecond(signatureRecord.getSignatureTimestamp());
                         Instant now = Instant.now();
-                        if (signedTime.isAfter(now.plusSeconds(300))) {
+                        if (signedTime.isAfter(now.plusMillis(options.getClockDriftTolerance().toMillis()))) {
                             // RFC 6376, Section 3.5 page 25, about clock drift:
                             // Receivers MAY add a 'fudge factor' to allow for such possible drift.
                             Duration diff = Duration.between(now, signedTime);
