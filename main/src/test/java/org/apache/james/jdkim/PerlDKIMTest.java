@@ -113,7 +113,7 @@ public class PerlDKIMTest extends TestCase {
 
         try {
             DKIMVerifier verifier = new DKIMVerifier(pkr);
-            List<SignatureRecord> res = verifier.verify(is);
+            verifier.verify(is);
 
             if (getName().matches("good_dk_7|good_dk_6|dk_headers_2|good_dk_3")
                 || getName().matches("|good_dk_gmail|dk_headers_1|good_dk_5|good_dk_4")
@@ -133,7 +133,7 @@ public class PerlDKIMTest extends TestCase {
             }
             assertTrue(verifier.getResults().stream().allMatch(f  -> f.getRecord().getRawSignature() != null));
             if (expectNull)
-                assertNull(res);
+                assertTrue(verifier.getResults().stream().noneMatch(Result::isSuccess));
             if (expectFailure)
                 fail("Failure expected!");
         } catch (FailException e) {
