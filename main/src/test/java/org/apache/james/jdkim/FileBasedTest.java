@@ -210,11 +210,11 @@ public class FileBasedTest extends TestCase {
 
         try {
             DKIMVerifier verifier = new DKIMVerifier(pkr);
-            List<SignatureRecord> res = verifier.verify(is);
+            boolean res = verifier.verify(is);
             assertEquals(1, verifier.getResults().size());
             if (getName().startsWith("NONE_"))
-                assertNull(res);
-            if (getName().startsWith("FAIL_"))
+                assertFalse(res);
+            if (getName().startsWith("FAIL_") && res)
                 fail("Test for " + file + " failed: Expected failure");
         } catch (PermFailException e) {
             if (!getName().startsWith("FAIL_"))

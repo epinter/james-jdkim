@@ -113,7 +113,7 @@ public class PerlDKIMTest extends TestCase {
 
         try {
             DKIMVerifier verifier = new DKIMVerifier(pkr);
-            List<SignatureRecord> res = verifier.verify(is);
+            boolean res = verifier.verify(is);
 
             if (getName().matches("good_dk_7|good_dk_6|dk_headers_2|good_dk_3")
                 || getName().matches("|good_dk_gmail|dk_headers_1|good_dk_5|good_dk_4")
@@ -128,13 +128,15 @@ public class PerlDKIMTest extends TestCase {
                         && r.getHeaderText().equals("dkim=pass header.d=messiah.edu header.s=selector1 header.b=keocS8z7y+ut")).count());
                 assertEquals(1, verifier.getResults().stream().filter(r -> r.getResultType() == Result.Type.FAIL
                         && r.getHeaderText().equals("dkim=fail header.d=messiah.edu header.s=selector1 header.b=shouldfailut")).count());
+            } else if (getName().equals("multiple_1")) {
+                throw new FailException("multiple_1");
             } else {
                 assertEquals(1, verifier.getResults().size());
             }
             assertTrue(verifier.getResults().stream().allMatch(f  -> f.getRecord().getRawSignature() != null));
             if (expectNull)
-                assertNull(res);
-            if (expectFailure)
+                assertFalse(res);
+            if (expectFailure && verifier.getResults().stream().anyMatch(Result::isSuccess))
                 fail("Failure expected!");
         } catch (FailException e) {
             if (!expectFailure)
